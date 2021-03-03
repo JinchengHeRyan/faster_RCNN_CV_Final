@@ -1,5 +1,5 @@
-from __future__ import  absolute_import
-from __future__ import  division
+from __future__ import absolute_import
+from __future__ import division
 import torch as t
 from data.voc_dataset import VOCBboxDataset
 from skimage import transform as sktsf
@@ -64,7 +64,7 @@ def preprocess(img, min_size=600, max_size=1000):
     scale2 = max_size / max(H, W)
     scale = min(scale1, scale2)
     img = img / 255.
-    img = sktsf.resize(img, (C, H * scale, W * scale), mode='reflect',anti_aliasing=False)
+    img = sktsf.resize(img, (C, H * scale, W * scale), mode='reflect', anti_aliasing=False)
     # both the longer and shorter should be less than
     # max_size and min_size
     if opt.caffe_pretrain:

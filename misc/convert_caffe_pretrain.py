@@ -15,7 +15,8 @@ sd['classifier.3.bias'] = sd['classifier.4.bias']
 del sd['classifier.4.weight']
 del sd['classifier.4.bias']
 
-import  os
+import os
+
 # speicify the path to save
 if not os.path.exists('checkpoints'):
     os.makedirs('checkpoints')

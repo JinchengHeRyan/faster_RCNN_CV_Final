@@ -5,6 +5,7 @@ import numpy as np
 from utils import array_tool as at
 from model.utils.bbox_tools import loc2bbox
 from torchvision.ops import nms
+
 # from model.utils.nms import non_maximum_suppression
 
 from torch import nn
@@ -70,10 +71,14 @@ class FasterRCNN(nn.Module):
 
     """
 
-    def __init__(self, extractor, rpn, head,
-                 loc_normalize_mean=(0., 0., 0., 0.),
-                 loc_normalize_std=(0.1, 0.1, 0.2, 0.2)
-                 ):
+    def __init__(
+        self,
+        extractor,
+        rpn,
+        head,
+        loc_normalize_mean=(0.0, 0.0, 0.0, 0.0),
+        loc_normalize_std=(0.1, 0.1, 0.2, 0.2),
+    ):
         super(FasterRCNN, self).__init__()
         self.extractor = extractor
         self.rpn = rpn
@@ -82,14 +87,14 @@ class FasterRCNN(nn.Module):
         # mean and std
         self.loc_normalize_mean = loc_normalize_mean
         self.loc_normalize_std = loc_normalize_std
-        self.use_preset('evaluate')
+        self.use_preset("evaluate")
 
     @property
     def n_class(self):
         # Total number of classes including the background.
         return self.head.n_class
 
-    def forward(self, x, scale=1.):
+    def forward(self, x, scale=1.0):
         """Forward Faster R-CNN.
 
         Scaling paramter :obj:`scale` is used by RPN to determine the
@@ -129,10 +134,8 @@ class FasterRCNN(nn.Module):
         img_size = x.shape[2:]
 
         h = self.extractor(x)
-        rpn_locs, rpn_scores, rois, roi_indices, anchor = \
-            self.rpn(h, img_size, scale)
-        roi_cls_locs, roi_scores = self.head(
-            h, rois, roi_indices)
+        rpn_locs, rpn_scores, rois, roi_indices, anchor = self.rpn(h, img_size, scale)
+        roi_cls_locs, roi_scores = self.head(h, rois, roi_indices)
         return roi_cls_locs, roi_scores, rois, roi_indices
 
     def use_preset(self, preset):
@@ -153,14 +156,14 @@ class FasterRCNN(nn.Module):
                 preset to use.
 
         """
-        if preset == 'visualize':
+        if preset == "visualize":
             self.nms_thresh = 0.3
             self.score_thresh = 0.7
-        elif preset == 'evaluate':
+        elif preset == "evaluate":
             self.nms_thresh = 0.3
             self.score_thresh = 0.05
         else:
-            raise ValueError('preset must be visualize or evaluate')
+            raise ValueError("preset must be visualize or evaluate")
 
     def _suppress(self, raw_cls_bbox, raw_prob):
         bbox = list()
@@ -216,7 +219,7 @@ class FasterRCNN(nn.Module):
         """
         self.eval()
         if visualize:
-            self.use_preset('visualize')
+            self.use_preset("visualize")
             prepared_imgs = list()
             sizes = list()
             for img in imgs:
@@ -240,46 +243,48 @@ class FasterRCNN(nn.Module):
 
             # Convert predictions to bounding boxes in image coordinates.
             # Bounding boxes are scaled to the scale of the input images.
-            mean = t.Tensor(self.loc_normalize_mean).cuda(). \
-                repeat(self.n_class)[None]
-            std = t.Tensor(self.loc_normalize_std).cuda(). \
-                repeat(self.n_class)[None]
+            mean = t.Tensor(self.loc_normalize_mean).cuda().repeat(self.n_class)[None]
+            std = t.Tensor(self.loc_normalize_std).cuda().repeat(self.n_class)[None]
 
-            roi_cls_loc = (roi_cls_loc * std + mean)
+            roi_cls_loc = roi_cls_loc * std + mean
             roi_cls_loc = roi_cls_loc.view(-1, self.n_class, 4)
             roi = roi.view(-1, 1, 4).expand_as(roi_cls_loc)
-            cls_bbox = loc2bbox(at.tonumpy(roi).reshape((-1, 4)),
-                                at.tonumpy(roi_cls_loc).reshape((-1, 4)))
+            cls_bbox = loc2bbox(
+                at.tonumpy(roi).reshape((-1, 4)),
+                at.tonumpy(roi_cls_loc).reshape((-1, 4)),
+            )
             cls_bbox = at.totensor(cls_bbox)
             cls_bbox = cls_bbox.view(-1, self.n_class * 4)
             # clip bounding box
             cls_bbox[:, 0::2] = (cls_bbox[:, 0::2]).clamp(min=0, max=size[0])
             cls_bbox[:, 1::2] = (cls_bbox[:, 1::2]).clamp(min=0, max=size[1])
 
-            prob = (F.softmax(at.totensor(roi_score), dim=1))
+            prob = F.softmax(at.totensor(roi_score), dim=1)
 
             bbox, label, score = self._suppress(cls_bbox, prob)
             bboxes.append(bbox)
             labels.append(label)
             scores.append(score)
 
-        self.use_preset('evaluate')
+        self.use_preset("evaluate")
         self.train()
         return bboxes, labels, scores
 
     def get_optimizer(self):
         """
-        return optimizer, It could be overwriten if you want to specify 
+        return optimizer, It could be overwriten if you want to specify
         special optimizer
         """
         lr = opt.lr
         params = []
         for key, value in dict(self.named_parameters()).items():
             if value.requires_grad:
-                if 'bias' in key:
-                    params += [{'params': [value], 'lr': lr * 2, 'weight_decay': 0}]
+                if "bias" in key:
+                    params += [{"params": [value], "lr": lr * 2, "weight_decay": 0}]
                 else:
-                    params += [{'params': [value], 'lr': lr, 'weight_decay': opt.weight_decay}]
+                    params += [
+                        {"params": [value], "lr": lr, "weight_decay": opt.weight_decay}
+                    ]
         if opt.use_adam:
             self.optimizer = t.optim.Adam(params)
         else:
@@ -288,5 +293,5 @@ class FasterRCNN(nn.Module):
 
     def scale_lr(self, decay=0.1):
         for param_group in self.optimizer.param_groups:
-            param_group['lr'] *= decay
+            param_group["lr"] *= decay
         return self.optimizer

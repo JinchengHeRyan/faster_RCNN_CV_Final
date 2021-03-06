@@ -55,15 +55,12 @@ class FasterRCNNVGG16(FasterRCNN):
 
     feat_stride = 16  # downsample 16x for output of conv5 in vgg16
 
-    def __init__(self,
-                 n_fg_class=20,
-                 ratios=[0.5, 1, 2],
-                 anchor_scales=[8, 16, 32]
-                 ):
+    def __init__(self, n_fg_class=20, ratios=[0.5, 1, 2], anchor_scales=[8, 16, 32]):
         extractor, classifier = decom_vgg16()
 
         rpn = RegionProposalNetwork(
-            512, 512,
+            512,
+            512,
             ratios=ratios,
             anchor_scales=anchor_scales,
             feat_stride=self.feat_stride,
@@ -72,8 +69,8 @@ class FasterRCNNVGG16(FasterRCNN):
         head = VGG16RoIHead(
             n_class=n_fg_class + 1,
             roi_size=7,
-            spatial_scale=(1. / self.feat_stride),
-            classifier=classifier
+            spatial_scale=(1.0 / self.feat_stride),
+            classifier=classifier,
         )
 
         super(FasterRCNNVGG16, self).__init__(
@@ -88,7 +85,7 @@ class VGG16RoIHead(nn.Module):
     This class is used as a head for Faster R-CNN.
     This outputs class-wise localizations and classification based on feature
     maps in the given RoIs.
-    
+
     Args:
         n_class (int): The number of classes possibly including the background.
         roi_size (int): Height and width of the feature maps after RoI-pooling.
@@ -97,8 +94,7 @@ class VGG16RoIHead(nn.Module):
 
     """
 
-    def __init__(self, n_class, roi_size, spatial_scale,
-                 classifier):
+    def __init__(self, n_class, roi_size, spatial_scale, classifier):
         # n_class includes the background
         super(VGG16RoIHead, self).__init__()
 
@@ -153,7 +149,9 @@ def normal_init(m, mean, stddev, truncated=False):
     """
     # x is a parameter
     if truncated:
-        m.weight.data.normal_().fmod_(2).mul_(stddev).add_(mean)  # not a perfect approximation
+        m.weight.data.normal_().fmod_(2).mul_(stddev).add_(
+            mean
+        )  # not a perfect approximation
     else:
         m.weight.data.normal_(mean, stddev)
         m.bias.data.zero_()

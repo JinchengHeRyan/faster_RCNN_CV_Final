@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES=6,7 python train.py train --plot-every=100
+CUDA_VISIBLE_DEVICES=0,1 python train.py train --plot-every=100

@@ -42,13 +42,18 @@ class RegionProposalNetwork(nn.Module):
     """
 
     def __init__(
-            self, in_channels=512, mid_channels=512, ratios=[0.5, 1, 2],
-            anchor_scales=[8, 16, 32], feat_stride=16,
-            proposal_creator_params=dict(),
+        self,
+        in_channels=512,
+        mid_channels=512,
+        ratios=[0.5, 1, 2],
+        anchor_scales=[8, 16, 32],
+        feat_stride=16,
+        proposal_creator_params=dict(),
     ):
         super(RegionProposalNetwork, self).__init__()
         self.anchor_base = generate_anchor_base(
-            anchor_scales=anchor_scales, ratios=ratios)
+            anchor_scales=anchor_scales, ratios=ratios
+        )
         self.feat_stride = feat_stride
         self.proposal_layer = ProposalCreator(self, **proposal_creator_params)
         n_anchor = self.anchor_base.shape[0]
@@ -59,7 +64,7 @@ class RegionProposalNetwork(nn.Module):
         normal_init(self.score, 0, 0.01)
         normal_init(self.loc, 0, 0.01)
 
-    def forward(self, x, img_size, scale=1.):
+    def forward(self, x, img_size, scale=1.0):
         """Forward Region Proposal Network.
 
         Here are notations.
@@ -100,8 +105,8 @@ class RegionProposalNetwork(nn.Module):
         """
         n, _, hh, ww = x.shape
         anchor = _enumerate_shifted_anchor(
-            np.array(self.anchor_base),
-            self.feat_stride, hh, ww)
+            np.array(self.anchor_base), self.feat_stride, hh, ww
+        )
 
         n_anchor = anchor.shape[0] // (hh * ww)
         h = F.relu(self.conv1(x))
@@ -123,8 +128,10 @@ class RegionProposalNetwork(nn.Module):
             roi = self.proposal_layer(
                 rpn_locs[i].cpu().data.numpy(),
                 rpn_fg_scores[i].cpu().data.numpy(),
-                anchor, img_size,
-                scale=scale)
+                anchor,
+                img_size,
+                scale=scale,
+            )
             batch_index = i * np.ones((len(roi),), dtype=np.int32)
             rois.append(roi)
             roi_indices.append(batch_index)
@@ -147,16 +154,19 @@ def _enumerate_shifted_anchor(anchor_base, feat_stride, height, width):
     # xp = cuda.get_array_module(anchor_base)
     # it seems that it can't be boosed using GPU
     import numpy as xp
+
     shift_y = xp.arange(0, height * feat_stride, feat_stride)
     shift_x = xp.arange(0, width * feat_stride, feat_stride)
     shift_x, shift_y = xp.meshgrid(shift_x, shift_y)
-    shift = xp.stack((shift_y.ravel(), shift_x.ravel(),
-                      shift_y.ravel(), shift_x.ravel()), axis=1)
+    shift = xp.stack(
+        (shift_y.ravel(), shift_x.ravel(), shift_y.ravel(), shift_x.ravel()), axis=1
+    )
 
     A = anchor_base.shape[0]
     K = shift.shape[0]
-    anchor = anchor_base.reshape((1, A, 4)) + \
-             shift.reshape((1, K, 4)).transpose((1, 0, 2))
+    anchor = anchor_base.reshape((1, A, 4)) + shift.reshape((1, K, 4)).transpose(
+        (1, 0, 2)
+    )
     anchor = anchor.reshape((K * A, 4)).astype(np.float32)
     return anchor
 
@@ -173,16 +183,19 @@ def _enumerate_shifted_anchor_torch(anchor_base, feat_stride, height, width):
     # !TODO: add support for torch.CudaTensor
     # xp = cuda.get_array_module(anchor_base)
     import torch as t
+
     shift_y = t.arange(0, height * feat_stride, feat_stride)
     shift_x = t.arange(0, width * feat_stride, feat_stride)
     shift_x, shift_y = xp.meshgrid(shift_x, shift_y)
-    shift = xp.stack((shift_y.ravel(), shift_x.ravel(),
-                      shift_y.ravel(), shift_x.ravel()), axis=1)
+    shift = xp.stack(
+        (shift_y.ravel(), shift_x.ravel(), shift_y.ravel(), shift_x.ravel()), axis=1
+    )
 
     A = anchor_base.shape[0]
     K = shift.shape[0]
-    anchor = anchor_base.reshape((1, A, 4)) + \
-             shift.reshape((1, K, 4)).transpose((1, 0, 2))
+    anchor = anchor_base.reshape((1, A, 4)) + shift.reshape((1, K, 4)).transpose(
+        (1, 0, 2)
+    )
     anchor = anchor.reshape((K * A, 4)).astype(np.float32)
     return anchor
 
@@ -193,7 +206,9 @@ def normal_init(m, mean, stddev, truncated=False):
     """
     # x is a parameter
     if truncated:
-        m.weight.data.normal_().fmod_(2).mul_(stddev).add_(mean)  # not a perfect approximation
+        m.weight.data.normal_().fmod_(2).mul_(stddev).add_(
+            mean
+        )  # not a perfect approximation
     else:
         m.weight.data.normal_(mean, stddev)
         m.bias.data.zero_()

@@ -28,20 +28,28 @@ class ProposalTargetCreator(object):
 
     """
 
-    def __init__(self,
-                 n_sample=128,
-                 pos_ratio=0.25, pos_iou_thresh=0.5,
-                 neg_iou_thresh_hi=0.5, neg_iou_thresh_lo=0.0
-                 ):
+    def __init__(
+        self,
+        n_sample=128,
+        pos_ratio=0.25,
+        pos_iou_thresh=0.5,
+        neg_iou_thresh_hi=0.5,
+        neg_iou_thresh_lo=0.0,
+    ):
         self.n_sample = n_sample
         self.pos_ratio = pos_ratio
         self.pos_iou_thresh = pos_iou_thresh
         self.neg_iou_thresh_hi = neg_iou_thresh_hi
         self.neg_iou_thresh_lo = neg_iou_thresh_lo  # NOTE:default 0.1 in py-faster-rcnn
 
-    def __call__(self, roi, bbox, label,
-                 loc_normalize_mean=(0., 0., 0., 0.),
-                 loc_normalize_std=(0.1, 0.1, 0.2, 0.2)):
+    def __call__(
+        self,
+        roi,
+        bbox,
+        label,
+        loc_normalize_mean=(0.0, 0.0, 0.0, 0.0),
+        loc_normalize_std=(0.1, 0.1, 0.2, 0.2),
+    ):
         """Assigns ground truth to sampled proposals.
 
         This function samples total of :obj:`self.n_sample` RoIs
@@ -105,18 +113,20 @@ class ProposalTargetCreator(object):
         pos_roi_per_this_image = int(min(pos_roi_per_image, pos_index.size))
         if pos_index.size > 0:
             pos_index = np.random.choice(
-                pos_index, size=pos_roi_per_this_image, replace=False)
+                pos_index, size=pos_roi_per_this_image, replace=False
+            )
 
         # Select background RoIs as those within
         # [neg_iou_thresh_lo, neg_iou_thresh_hi).
-        neg_index = np.where((max_iou < self.neg_iou_thresh_hi) &
-                             (max_iou >= self.neg_iou_thresh_lo))[0]
+        neg_index = np.where(
+            (max_iou < self.neg_iou_thresh_hi) & (max_iou >= self.neg_iou_thresh_lo)
+        )[0]
         neg_roi_per_this_image = self.n_sample - pos_roi_per_this_image
-        neg_roi_per_this_image = int(min(neg_roi_per_this_image,
-                                         neg_index.size))
+        neg_roi_per_this_image = int(min(neg_roi_per_this_image, neg_index.size))
         if neg_index.size > 0:
             neg_index = np.random.choice(
-                neg_index, size=neg_roi_per_this_image, replace=False)
+                neg_index, size=neg_roi_per_this_image, replace=False
+            )
 
         # The indices that we're selecting (both positive and negative).
         keep_index = np.append(pos_index, neg_index)
@@ -126,8 +136,9 @@ class ProposalTargetCreator(object):
 
         # Compute offsets and scales to match sampled RoIs to the GTs.
         gt_roi_loc = bbox2loc(sample_roi, bbox[gt_assignment[keep_index]])
-        gt_roi_loc = ((gt_roi_loc - np.array(loc_normalize_mean, np.float32)
-                       ) / np.array(loc_normalize_std, np.float32))
+        gt_roi_loc = (gt_roi_loc - np.array(loc_normalize_mean, np.float32)) / np.array(
+            loc_normalize_std, np.float32
+        )
 
         return sample_roi, gt_roi_loc, gt_roi_label
 
@@ -157,10 +168,9 @@ class AnchorTargetCreator(object):
 
     """
 
-    def __init__(self,
-                 n_sample=256,
-                 pos_iou_thresh=0.7, neg_iou_thresh=0.3,
-                 pos_ratio=0.5):
+    def __init__(
+        self, n_sample=256, pos_iou_thresh=0.7, neg_iou_thresh=0.3, pos_ratio=0.5
+    ):
         self.n_sample = n_sample
         self.pos_iou_thresh = pos_iou_thresh
         self.neg_iou_thresh = neg_iou_thresh
@@ -201,8 +211,7 @@ class AnchorTargetCreator(object):
         n_anchor = len(anchor)
         inside_index = _get_inside_index(anchor, img_H, img_W)
         anchor = anchor[inside_index]
-        argmax_ious, label = self._create_label(
-            inside_index, anchor, bbox)
+        argmax_ious, label = self._create_label(inside_index, anchor, bbox)
 
         # compute bounding box regression targets
         loc = bbox2loc(anchor, bbox[argmax_ious])
@@ -218,8 +227,9 @@ class AnchorTargetCreator(object):
         label = np.empty((len(inside_index),), dtype=np.int32)
         label.fill(-1)
 
-        argmax_ious, max_ious, gt_argmax_ious = \
-            self._calc_ious(anchor, bbox, inside_index)
+        argmax_ious, max_ious, gt_argmax_ious = self._calc_ious(
+            anchor, bbox, inside_index
+        )
 
         # assign negative labels first so that positive labels can clobber them
         label[max_ious < self.neg_iou_thresh] = 0
@@ -235,7 +245,8 @@ class AnchorTargetCreator(object):
         pos_index = np.where(label == 1)[0]
         if len(pos_index) > n_pos:
             disable_index = np.random.choice(
-                pos_index, size=(len(pos_index) - n_pos), replace=False)
+                pos_index, size=(len(pos_index) - n_pos), replace=False
+            )
             label[disable_index] = -1
 
         # subsample negative labels if we have too many
@@ -243,7 +254,8 @@ class AnchorTargetCreator(object):
         neg_index = np.where(label == 0)[0]
         if len(neg_index) > n_neg:
             disable_index = np.random.choice(
-                neg_index, size=(len(neg_index) - n_neg), replace=False)
+                neg_index, size=(len(neg_index) - n_neg), replace=False
+            )
             label[disable_index] = -1
 
         return argmax_ious, label
@@ -279,10 +291,10 @@ def _get_inside_index(anchor, H, W):
     # Calc indicies of anchors which are located completely inside of the image
     # whose size is speficied.
     index_inside = np.where(
-        (anchor[:, 0] >= 0) &
-        (anchor[:, 1] >= 0) &
-        (anchor[:, 2] <= H) &
-        (anchor[:, 3] <= W)
+        (anchor[:, 0] >= 0)
+        & (anchor[:, 1] >= 0)
+        & (anchor[:, 2] <= H)
+        & (anchor[:, 3] <= W)
     )[0]
     return index_inside
 
@@ -327,15 +339,16 @@ class ProposalCreator:
 
     """
 
-    def __init__(self,
-                 parent_model,
-                 nms_thresh=0.7,
-                 n_train_pre_nms=12000,
-                 n_train_post_nms=2000,
-                 n_test_pre_nms=6000,
-                 n_test_post_nms=300,
-                 min_size=16
-                 ):
+    def __init__(
+        self,
+        parent_model,
+        nms_thresh=0.7,
+        n_train_pre_nms=12000,
+        n_train_post_nms=2000,
+        n_test_pre_nms=6000,
+        n_test_post_nms=300,
+        min_size=16,
+    ):
         self.parent_model = parent_model
         self.nms_thresh = nms_thresh
         self.n_train_pre_nms = n_train_pre_nms
@@ -344,8 +357,7 @@ class ProposalCreator:
         self.n_test_post_nms = n_test_post_nms
         self.min_size = min_size
 
-    def __call__(self, loc, score,
-                 anchor, img_size, scale=1.):
+    def __call__(self, loc, score, anchor, img_size, scale=1.0):
         """input should  be ndarray
         Propose RoIs.
 
@@ -395,10 +407,8 @@ class ProposalCreator:
         roi = loc2bbox(anchor, loc)
 
         # Clip predicted boxes to image.
-        roi[:, slice(0, 4, 2)] = np.clip(
-            roi[:, slice(0, 4, 2)], 0, img_size[0])
-        roi[:, slice(1, 4, 2)] = np.clip(
-            roi[:, slice(1, 4, 2)], 0, img_size[1])
+        roi[:, slice(0, 4, 2)] = np.clip(roi[:, slice(0, 4, 2)], 0, img_size[0])
+        roi[:, slice(1, 4, 2)] = np.clip(roi[:, slice(1, 4, 2)], 0, img_size[1])
 
         # Remove predicted boxes with either height or width < threshold.
         min_size = self.min_size * scale
@@ -424,7 +434,8 @@ class ProposalCreator:
         keep = nms(
             torch.from_numpy(roi).cuda(),
             torch.from_numpy(score).cuda(),
-            self.nms_thresh)
+            self.nms_thresh,
+        )
         if n_post_nms > 0:
             keep = keep[:n_post_nms]
         roi = roi[keep.cpu().numpy()]

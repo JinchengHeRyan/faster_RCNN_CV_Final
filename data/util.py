@@ -25,12 +25,12 @@ def read_image(path, dtype=np.float32, color=True):
     f = Image.open(path)
     try:
         if color:
-            img = f.convert('RGB')
+            img = f.convert("RGB")
         else:
-            img = f.convert('P')
+            img = f.convert("P")
         img = np.asarray(img, dtype=dtype)
     finally:
-        if hasattr(f, 'close'):
+        if hasattr(f, "close"):
             f.close()
 
     if img.ndim == 2:
@@ -115,8 +115,8 @@ def flip_bbox(bbox, size, y_flip=False, x_flip=False):
 
 
 def crop_bbox(
-        bbox, y_slice=None, x_slice=None,
-        allow_outside_center=True, return_param=False):
+    bbox, y_slice=None, x_slice=None, allow_outside_center=True, return_param=False
+):
     """Translate bounding boxes to fit within the cropped area of an image.
 
     This method is mainly used together with image cropping.
@@ -168,8 +168,7 @@ def crop_bbox(
         mask = np.ones(bbox.shape[0], dtype=bool)
     else:
         center = (bbox[:, :2] + bbox[:, 2:]) / 2.0
-        mask = np.logical_and(crop_bb[:2] <= center, center < crop_bb[2:]) \
-            .all(axis=1)
+        mask = np.logical_and(crop_bb[:2] <= center, center < crop_bb[2:]).all(axis=1)
 
     bbox = bbox.copy()
     bbox[:, :2] = np.maximum(bbox[:, :2], crop_bb[:2])
@@ -181,7 +180,7 @@ def crop_bbox(
     bbox = bbox[mask]
 
     if return_param:
-        return bbox, {'index': np.flatnonzero(mask)}
+        return bbox, {"index": np.flatnonzero(mask)}
     else:
         return bbox
 
@@ -237,8 +236,7 @@ def translate_bbox(bbox, y_offset=0, x_offset=0):
     return out_bbox
 
 
-def random_flip(img, y_random=False, x_random=False,
-                return_param=False, copy=False):
+def random_flip(img, y_random=False, x_random=False, return_param=False, copy=False):
     """Randomly flip an image in vertical or horizontal direction.
 
     Args:
@@ -282,6 +280,6 @@ def random_flip(img, y_random=False, x_random=False,
         img = img.copy()
 
     if return_param:
-        return img, {'y_flip': y_flip, 'x_flip': x_flip}
+        return img, {"y_flip": y_flip, "x_flip": x_flip}
     else:
         return img

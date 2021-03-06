@@ -22,8 +22,7 @@ def pytorch_normalze(img):
     https://github.com/pytorch/vision/issues/223
     return appr -1~1 RGB
     """
-    normalize = tvtsf.Normalize(mean=[0.485, 0.456, 0.406],
-                                std=[0.229, 0.224, 0.225])
+    normalize = tvtsf.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     img = normalize(t.from_numpy(img))
     return img.numpy()
 
@@ -63,8 +62,10 @@ def preprocess(img, min_size=600, max_size=1000):
     scale1 = min_size / min(H, W)
     scale2 = max_size / max(H, W)
     scale = min(scale1, scale2)
-    img = img / 255.
-    img = sktsf.resize(img, (C, H * scale, W * scale), mode='reflect', anti_aliasing=False)
+    img = img / 255.0
+    img = sktsf.resize(
+        img, (C, H * scale, W * scale), mode="reflect", anti_aliasing=False
+    )
     # both the longer and shorter should be less than
     # max_size and min_size
     if opt.caffe_pretrain:
@@ -75,7 +76,6 @@ def preprocess(img, min_size=600, max_size=1000):
 
 
 class Transform(object):
-
     def __init__(self, min_size=600, max_size=1000):
         self.min_size = min_size
         self.max_size = max_size
@@ -89,10 +89,8 @@ class Transform(object):
         bbox = util.resize_bbox(bbox, (H, W), (o_H, o_W))
 
         # horizontally flip
-        img, params = util.random_flip(
-            img, x_random=True, return_param=True)
-        bbox = util.flip_bbox(
-            bbox, (o_H, o_W), x_flip=params['x_flip'])
+        img, params = util.random_flip(img, x_random=True, return_param=True)
+        bbox = util.flip_bbox(bbox, (o_H, o_W), x_flip=params["x_flip"])
 
         return img, bbox, label, scale
 
@@ -116,9 +114,11 @@ class Dataset:
 
 
 class TestDataset:
-    def __init__(self, opt, split='test', use_difficult=True):
+    def __init__(self, opt, split="test", use_difficult=True):
         self.opt = opt
-        self.db = VOCBboxDataset(opt.voc_data_dir, split=split, use_difficult=use_difficult)
+        self.db = VOCBboxDataset(
+            opt.voc_data_dir, split=split, use_difficult=use_difficult
+        )
 
     def __getitem__(self, idx):
         ori_img, bbox, label, difficult = self.db.get_example(idx)

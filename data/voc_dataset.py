@@ -46,7 +46,7 @@ class VOCBboxDataset:
     * :obj:`difficult.dtype == numpy.bool`
 
     Args:
-        data_dir (string): Path to the root of the training data. 
+        data_dir (string): Path to the root of the training data.
             i.e. "/data/image/voc/VOCdevkit/VOC2007/"
         split ({'train', 'val', 'trainval', 'test'}): Select a split of the
             dataset. :obj:`test` split is only available for
@@ -62,9 +62,13 @@ class VOCBboxDataset:
 
     """
 
-    def __init__(self, data_dir, split='trainval',
-                 use_difficult=False, return_difficult=False,
-                 ):
+    def __init__(
+        self,
+        data_dir,
+        split="trainval",
+        use_difficult=False,
+        return_difficult=False,
+    ):
 
         # if split not in ['train', 'trainval', 'val']:
         #     if not (split == 'test' and year == '2007'):
@@ -73,8 +77,7 @@ class VOCBboxDataset:
         #             'for 2012 dataset. For 2007 dataset, you can pick \'test\''
         #             ' in addition to the above mentioned splits.'
         #         )
-        id_list_file = os.path.join(
-            data_dir, 'ImageSets/Main/{0}.txt'.format(split))
+        id_list_file = os.path.join(data_dir, "ImageSets/Main/{0}.txt".format(split))
 
         self.ids = [id_.strip() for id_ in open(id_list_file)]
         self.data_dir = data_dir
@@ -99,32 +102,36 @@ class VOCBboxDataset:
 
         """
         id_ = self.ids[i]
-        anno = ET.parse(
-            os.path.join(self.data_dir, 'Annotations', id_ + '.xml'))
+        anno = ET.parse(os.path.join(self.data_dir, "Annotations", id_ + ".xml"))
         bbox = list()
         label = list()
         difficult = list()
-        for obj in anno.findall('object'):
+        for obj in anno.findall("object"):
             # when in not using difficult split, and the object is
             # difficult, skipt it.
-            if not self.use_difficult and int(obj.find('difficult').text) == 1:
+            if not self.use_difficult and int(obj.find("difficult").text) == 1:
                 continue
 
-            difficult.append(int(obj.find('difficult').text))
-            bndbox_anno = obj.find('bndbox')
+            difficult.append(int(obj.find("difficult").text))
+            bndbox_anno = obj.find("bndbox")
             # subtract 1 to make pixel indexes 0-based
-            bbox.append([
-                int(bndbox_anno.find(tag).text) - 1
-                for tag in ('ymin', 'xmin', 'ymax', 'xmax')])
-            name = obj.find('name').text.lower().strip()
+            bbox.append(
+                [
+                    int(bndbox_anno.find(tag).text) - 1
+                    for tag in ("ymin", "xmin", "ymax", "xmax")
+                ]
+            )
+            name = obj.find("name").text.lower().strip()
             label.append(VOC_BBOX_LABEL_NAMES.index(name))
         bbox = np.stack(bbox).astype(np.float32)
         label = np.stack(label).astype(np.int32)
         # When `use_difficult==False`, all elements in `difficult` are False.
-        difficult = np.array(difficult, dtype=np.bool).astype(np.uint8)  # PyTorch don't support np.bool
+        difficult = np.array(difficult, dtype=np.bool).astype(
+            np.uint8
+        )  # PyTorch don't support np.bool
 
         # Load a image
-        img_file = os.path.join(self.data_dir, 'JPEGImages', id_ + '.jpg')
+        img_file = os.path.join(self.data_dir, "JPEGImages", id_ + ".jpg")
         img = read_image(img_file, color=True)
 
         # if self.return_difficult:
@@ -135,23 +142,24 @@ class VOCBboxDataset:
 
 
 VOC_BBOX_LABEL_NAMES = (
-    'aeroplane',
-    'bicycle',
-    'bird',
-    'boat',
-    'bottle',
-    'bus',
-    'car',
-    'cat',
-    'chair',
-    'cow',
-    'diningtable',
-    'dog',
-    'horse',
-    'motorbike',
-    'person',
-    'pottedplant',
-    'sheep',
-    'sofa',
-    'train',
-    'tvmonitor')
+    "aeroplane",
+    "bicycle",
+    "bird",
+    "boat",
+    "bottle",
+    "bus",
+    "car",
+    "cat",
+    "chair",
+    "cow",
+    "diningtable",
+    "dog",
+    "horse",
+    "motorbike",
+    "person",
+    "pottedplant",
+    "sheep",
+    "sofa",
+    "train",
+    "tvmonitor",
+)

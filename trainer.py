@@ -9,6 +9,7 @@ from torch import nn
 import torch as t
 from utils import array_tool as at
 from utils.vis_tool import Visualizer
+from utils.average import AverageVal
 
 from utils.config import opt
 from torchnet.meter import ConfusionMeter, AverageValueMeter
@@ -36,12 +37,15 @@ class FasterRCNNTrainer(nn.Module):
             A Faster R-CNN model that is going to be trained.
     """
 
-    def __init__(self, faster_rcnn):
+    def __init__(self, faster_rcnn, logger):
         super(FasterRCNNTrainer, self).__init__()
+
+        self.logger = logger
 
         self.faster_rcnn = faster_rcnn
         self.rpn_sigma = opt.rpn_sigma
         self.roi_sigma = opt.roi_sigma
+        self.losses = AverageVal()
 
         # target creator create gt_bbox gt_label etc as training targets.
         self.anchor_target_creator = AnchorTargetCreator()
@@ -160,12 +164,20 @@ class FasterRCNNTrainer(nn.Module):
 
         return LossTuple(*losses)
 
-    def train_step(self, imgs, bboxes, labels, scale):
+    def train_step(self, imgs, bboxes, labels, scale, print_epoch, print_info=False):
         self.optimizer.zero_grad()
         losses = self.forward(imgs, bboxes, labels, scale)
         losses.total_loss.backward()
         self.optimizer.step()
         self.update_meters(losses)
+
+        self.losses.update(losses.total_loss.item())
+
+        if print_info:
+            self.logger.info(
+                "Total Loss:({:.4f}){:.4f}\t".format(self.losses.val, self.losses.avg)
+            )
+
         return losses
 
     def save(self, save_optimizer=False, save_path=None, **kwargs):
@@ -235,6 +247,9 @@ class FasterRCNNTrainer(nn.Module):
 
     def get_meter_data(self):
         return {k: v.value()[0] for k, v in self.meters.items()}
+
+    def reset_ave(self):
+        self.losses = AverageVal()
 
 
 def _smooth_l1_loss(x, t, in_weight, sigma):

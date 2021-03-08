@@ -28,13 +28,14 @@ class Config:
     env = "faster-rcnn"  # visdom env
     port = 8097
     plot_every = 40  # vis every N iter
+    print_freq = 50
 
     # preset
     data = "voc"
     pretrained_model = "vgg16"
 
     # training
-    epoch = 14
+    epoch = 100
 
     use_adam = False  # Use Adam optimizer
     use_chainer = False  # try match everything as chainer

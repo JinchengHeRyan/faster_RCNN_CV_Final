@@ -270,6 +270,30 @@ class FasterRCNN(nn.Module):
         self.train()
         return bboxes, labels, scores
 
+    @nograd
+    def getFeatureMap(self, imgs, sizes=None):
+        self.eval()
+        self.use_preset("visualize")
+        prepared_imgs = list()
+        sizes = list()
+        for img in imgs:
+            size = img.shape[1:]
+            img = preprocess(at.tonumpy(img))
+            prepared_imgs.append(img)
+            sizes.append(size)
+
+        feature_maps = list()
+        for img, size in zip(prepared_imgs, sizes):
+            img = at.totensor(img[None]).float()
+            scale = img.shape[3] / size[1]
+            feature_map = self.extractor(img)
+            feature_maps.append(feature_map)
+        feature_maps = np.array(feature_maps)
+
+        self.use_preset("evaluate")
+        self.train()
+        return feature_maps
+
     def get_optimizer(self):
         """
         return optimizer, It could be overwriten if you want to specify

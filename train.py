@@ -60,7 +60,7 @@ def eval(dataloader, faster_rcnn, test_num=10000):
 def train(**kwargs):
     opt._parse(kwargs)
 
-    log_dir = os.path.join("logs", "faster_rcnn")
+    log_dir = os.path.join("logs", "faster_rcnn_train_onGray")
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(
         log_dir, time.strftime("%Y-%m-%d-%H%M.log", time.localtime(time.time()))
@@ -179,7 +179,11 @@ def train(**kwargs):
 
         if eval_result["map"] > best_map:
             best_map = eval_result["map"]
-            best_path = trainer.save(best_map=best_map)
+            best_path = trainer.save(
+                best_map=best_map,
+                save_path="checkpoints/trainedOnGray/fasterrcnn_%s"
+                % time.strftime("%m%d%H%M"),
+            )
         if epoch == 9:
             trainer.load(best_path)
             trainer.faster_rcnn.scale_lr(opt.lr_decay)

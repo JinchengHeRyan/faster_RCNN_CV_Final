@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from utils.config_VGGPretrain import opt
 from data.dataset import Dataset, TestDataset, inverse_normalize
-from model import FasterRCNNVGG16
+from model.faster_rcnn_vgg16_pretrained import FasterRCNNVGG16
 import torch
 from torch.utils import data as data_
 import torch.nn as nn

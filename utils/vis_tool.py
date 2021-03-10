@@ -35,7 +35,7 @@ VOC_BBOX_LABEL_NAMES = (
 )
 
 
-def vis_image(img, ax=None):
+def vis_image(img, figsize, ax=None):
     """Visualize a color image.
 
     Args:
@@ -52,7 +52,7 @@ def vis_image(img, ax=None):
     """
 
     if ax is None:
-        fig = plot.figure()
+        fig = plot.figure(figsize=figsize)
         ax = fig.add_subplot(1, 1, 1)
     # CHW -> HWC
     img = img.transpose((1, 2, 0))
@@ -60,7 +60,7 @@ def vis_image(img, ax=None):
     return ax
 
 
-def vis_bbox(img, bbox, label=None, score=None, ax=None):
+def vis_bbox(img, bbox, label=None, score=None, ax=None, figsize=(12, 12)):
     """Visualize bounding boxes inside image.
 
     Args:
@@ -96,7 +96,7 @@ def vis_bbox(img, bbox, label=None, score=None, ax=None):
         raise ValueError("The length of score must be same as that of bbox")
 
     # Returns newly instantiated matplotlib.axes.Axes object if ax is None
-    ax = vis_image(img, ax=ax)
+    ax = vis_image(img, ax=ax, figsize=figsize)
 
     # If there is no bounding box to display, visualize the image and exit.
     if len(bbox) == 0:

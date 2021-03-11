@@ -2,9 +2,13 @@
 .idea/
 logs/
 *.pth
-*.ipynb
 *.pyc
 *.jpg
 *.jpeg
 *.png
 checkpoints/
+.ipynb_checkpoints/
+
+!imgs/*.jpg
+!imgs/*.png
+!misc/demo.jpg
